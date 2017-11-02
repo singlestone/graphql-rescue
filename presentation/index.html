@@ -1,0 +1,1173 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>GraphQL to the Rescue</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/solarized.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<style>
+			.reveal {
+				font-size: 50px;
+			}
+			.reveal h1, .reveal h2, .reveal h3 {
+				color: #405861;
+			}
+			/* .reveal pre {
+				font-size: .65em;
+			} */
+			.reveal pre code {
+				max-height: 800px;
+			}
+		</style>
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<!-- 1 -->
+				<section>
+					<h1>GraphQL to the Rescue</h1>
+					<p>
+						<small>Presented by <a href="https://twitter.com/jayhogan">Jay Hogan</a></small><br/>
+						<small>Application Development Lead, <a href="https://www.singlestoneconsulting.com">SingleStone Consulting</a></small>
+					</p>
+					<aside class="notes">
+							<ul>
+									<li>Work for SingleStone - CX consulting firm here in Richmond</li>
+									<li>Building web-based applications for past 12 years</li>
+									<li>Been in IT for over 20 years, most of that time as a hands-on-keyboard developer</li>
+									<li>Show of hands - front end dev, back end dev, full stack ninjas, not a dev</li>
+									<li>Show of hands - at the wrong conference</li>
+								</ul>
+					</aside>
+				</section>
+
+				<!-- 3 -->
+				<section>
+					<h2>Agenda</h2>
+					<p></p>
+					<ol>
+						<li>GraphQL quickly defined</li>
+						<li>Why does it exist?</li>
+						<li>Deep dive</li>
+						<li>Why should you use it?</li>
+						<li>Obligatory code walk-through</li>
+					</ol>
+				</section>
+
+				<!-- 4 -->
+				<section>
+					<h2>GraphQL quickly defined</h2>
+					<p class="fragment fade-in">A query language for your API</p>
+					<p class="fragment fade-in">A type system to describe your data</p>
+					<p class="fragment fade-in">A server-side runtime to execute queries</p>
+					<aside class="notes">
+						<ul>
+							<li>Client constructs queries using query language (like SQL or Mongo's query lang)</li>
+							<li>Type system defines valid types and fields for your use case</li>
+							<li>Server-side runtime parses and executes the query using the resolver functions that you provide</li>
+							<li>It's not tied to any persistence system</li>
+							<li>It's a specification, not a library.</li>
+							<li>Reference implementation in Javascript</li>
+							<li>Ported to all major client environments and many server environments</li>
+						</ul>
+					</aside>
+				</section>
+
+				<!-- 5 -->
+				<section>
+					<h2>Why build something new?</h2>
+					<aside class="notes">
+						<ul>
+							<li>Created by Facebook in 2012</li>
+							<li>during move from HTML5 mobile apps to purely native applications</li>
+							<li>Data fetching challenges</li>
+							<li>Needed a better a way to get data from the server to the client</li>
+							<li>Like everyone else at the time (and still today), Facebook used REST and Ad Hoc approaches to build APIs</li>
+						</ul>
+					</aside>
+				</section>
+
+				<section>
+					<!-- 7 -->
+					<section>
+						<h2>Challenges with REST</h2>
+						<pre><code class="hljs" data-trim data-noescape>
+GET http://myapi.io/author/2
+HTTP/1.1 200 OK
+{
+	"first_name":"Douglas",
+	"last_name":"Crockford"
+}
+
+GET http://myapi.io/author/2/books
+HTTP/1.1 200 OK
+[{
+	"id":3,
+	"name":"Javascript: The Good Parts",
+	"isbn":"0596517742",
+	"publish_date":"2016-05-31"
+}]
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>REST, Representational State Transfer, is an architectural style rather than a formal protocol</li>
+								<li>Objects are addressable by URI</li>
+								<li>Interacted with using HTTP verbs (GET, PUT, POST, DELETE)</li>
+								<li>Typically 1-1 mapping between object and URL end-point</li>
+								<li>Typically JSON body and payloads</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 8 -->
+					<section>
+						<h2>Multiple requests to server required</h2>
+						<pre><code class="hljs" data-trim data-noescape>
+							GET http://myapi.io/books
+							<span class="fragment fade-in">GET http://myapi.io/book/1</span>
+							<span class="fragment fade-in">GET http://myapi.io/book/1/ratings</span>
+							<span class="fragment fade-in">GET http://myapi.io/author/2</span>
+							<span class="fragment fade-in">GET http://myapi.io/author/2/books</span>
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Even simple views require multiple round trip requests to server</li>
+								<li>Scenario - Book Store - book search requests</li>
+								<li>List of books</li>
+								<li>Average rating, author bio snippet, also by author in the search results</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 9 -->
+					<section>
+						<h2>Response payloads grow over time</h2>
+						<pre><code class="hljs" data-trim data-noescape>							
+							GET http://myapi.io/book/3<span class="fragment fade-in">?view=full</span>
+							{
+								"id":3,
+								"name":"Javascript: The Good Parts",
+								"isbn":"0596517742",
+								"publish_date":"2016-05-31".
+								"author": {
+									"first_name":"Douglas",
+									"last_name":"Crockford"
+								},
+								...
+							}
+
+							<span class="fragment fade-in">
+							GET http://myapi.io/book/3?view=compact
+							{
+								"id":3,
+								"name":"Javascript: The Good Parts"
+							}
+							</span>
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Fields are added to end points as requirements change (diff views, new clients, etc..)</li>
+								<li>When this happens, all clients are affected by the change</li>
+								<li>Could be solved by overlaying a versioning system</li>
+								<li>Or by baking flexibility into the end point (compact, full, etc..)</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 10 -->
+					<section>
+						<h2>Weakly typed</h2>
+						<pre><code class="hljs" data-trim data-noescape>
+							GET http://myapi.io/book/A
+							HTTP/1.1 500
+							Unexpected error
+
+
+							POST http://myapi.io/book/1
+							{ "foo":"bar"}
+							HTTP/1.1 500
+							Unexpected error
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>We could debate the merits of strong typing vs weak typing ad nauseum</li>
+								<li>There are some significant disadvantages to weak typing</li>
+								<li>Lots of server-side validation required. Cannot guarentee correctness (syntactically)</li>
+								<li>Write lots of documentation. Tools like swagger helps but not a silver bullet</li>
+								<li>Docs are frequently out of date and client developers must reference repeatedly</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 11 -->
+					<section>
+						<h2>REST is not a good fit</h2>
+						<blockquote>REST is intended for long-lived network-based applications that span multiple organizations</blockquote>
+						<aside class="notes">
+							<ul>
+								<li>Roy Fielding has stated, repeatedly, that REST APIs must be hypertext driven</li>
+								<li>We, as developers, have bended them to our needs, in response to heavy SOAP API's of the past</li>
+								<li>The invenotors of GraphQL believe that we have pushed the REST pattern far enough and need a new approach</li>
+							</ul>
+						</aside>
+					</section>
+				</section>
+
+				<section>
+					<!-- 12 -->
+					<section>
+						<h2>Challenges with Ad Hoc APIs</h2>
+						<aside class="notes">
+							<ul>
+								<li>Many teams start with "Let's do REST right"</li>
+								<li>No, no, no. We need to optimize this to make it work.</li>
+							</ul>
+						</aside>
+					</section>
+				
+					<!-- 13 -->
+					<section>
+						<h2>Custom end point per view</h2>
+						<pre><code class="hljs" data-trim data-noescape>
+							GET http://myapi.io/bookSearch
+							<span class="fragment fade-in">GET http://myapi.io/bookView</span>
+
+							<span class="fragment fade-in">GET http://myapi.io/bookEdit</span>
+
+							<span class="fragment fade-in">GET http://myapi.io/authorView</span>
+							
+							<span class="fragment fade-in">GET http://myapi.io/authorViewMobile</span>
+						</code></pre>
+						<aside class="notes">
+							<ul>
+									<li>Maintenance nightmare</li>
+									<li>Massive code duplication</li>
+									<li>Orphaned end points</li>
+									<li>Good teams tackle this with frameworks, tooling and solide engineering practices</li>
+								</ul>
+						</aside>
+					</section>
+
+					<!-- 14 -->
+					<section>
+						<h2>Even simple front end changes often require changes to the server</h2>
+						<p class="fragment fade-in">Product Owner: <q>Can I add the publication date to the page?</q></p>
+						<p class="fragment fade-in">Developer: <q>That's a 3 point story.</q></p>
+						<p class="fragment fade-in">Product Owner: <q>But it's just a simple date!</q></p>
+						<aside class="notes">
+							<ul>
+								<li>Update the database query</li>
+								<li>Update the view model</li>
+								<li>Update the tests</li>
+								<li>Then you can change your UI</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 15 -->
+					<section>
+						<h2>Payloads grow over time</h2>
+						<aside class="notes">
+							<ul>
+								<li>Even with custom end points, response payloads grow over time</li>
+								<li>Difficult to remove or rename fields without breaking clients</li>
+								<li>Especially true for native mobile/public apis where you have little control over client version</li>
+								<li>You can version your API, but then you have a maintenance nightmare</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 16 -->
+					<section>
+						<h2>Weakly typed</h2>
+						<aside class="notes">
+							<ul>
+								<li>Same as REST</li>
+							</ul>
+						</aside>
+					</section>
+				</section>
+
+				<!-- 17 -->
+				<section>
+					<h2>GraphQL Deep Dive</h2>
+					<img src="show_me_the_money.jpg">
+					<aside class="notes">
+						<ul>
+							<li>Jerry McGuire released in 1996</li>
+							<li>Javascript was released in 1995</li>
+						</ul>
+					</aside>
+				</section>
+
+				<section>
+					<!-- 18 -->
+					<section>
+						<h2>Query language</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							{
+								books {
+									name,
+									author {
+										first_name,
+										last_name
+									}
+									publish_date
+								}
+							}
+						</code></pre>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							"books":
+							[{
+								"name": "JavaScript: The Definitive Guide",
+								"author": {
+									"first_name": "David",
+									"last_name": "Flanagan"
+								},
+								"publish_date": "2011-05-13"
+							},
+							{
+								"name": "JavaScript: Pocket Reference",
+								"author": {
+									"first_name": "David",
+									"last_name": "Flanagan"
+								},
+								"publish_date": "2012-04-28"
+							}]
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Asking for specific fields on objects</li>
+								<li>The shape of the query matches the shape of the response</li>
+								<li>Author is an object that has other fields so you muct sub-select</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 20 -->
+					<section>
+						<h2>Arguments</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							{
+								books {
+									name,
+									price(currency: USD)
+								}
+							}
+						</code></pre>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							"books":
+							[{
+								"name": "JavaScript: The Definitive Guide",
+								"price": 32.64
+							},
+							{
+								"name": "JavaScript: Pocket Reference",
+								"price": 13.47
+							}]
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Fields can have arguments that trigger actions that occur on the server</li>
+								<li>In this case, currency conversion</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 21 -->
+					<section>
+						<h2>Aliases</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							{
+								books {
+									name,
+									price(currency: USD),
+									euPrice: price(currency: EUR)
+								}
+							}
+						</code></pre>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							"books":
+							[{
+								"name": "JavaScript: The Definitive Guide",
+								"price": 32.64,
+								"euPrice": 28.0704
+							},
+							{
+								"name": "JavaScript: Pocket Reference",
+								"price": 13.47,
+								"euPrice": 11.584200000000001
+							}]
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Let's you re-use the name of the field anyway you want</li>
+								<li>In this case, an alias is the only way to fetch both prices</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 22 -->
+
+					<section>
+						<h2>Variables</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							{
+								books {
+									name,
+									price(currency: $currency)
+								}
+							}
+
+							# Variables
+							{
+								currency: "USD"
+							}
+						</code></pre>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							"books":
+							[{
+								"name": "JavaScript: The Definitive Guide",
+								"price": 32.64
+							},
+							{
+								"name": "JavaScript: Pocket Reference",
+								"price": 13.47
+							}]
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>My mama always told me to never do string interpolation in queries</li>
+								<li>Bad things happen</li>
+								<li>In grapohQL, you can use variables to create arguments in your query</li>
+								<li>The client library provides a mechanism to call the query and pass in the variables</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 26 -->
+					<section>
+						<h2>Mutations</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							mutation {
+								addRating(rating: $rating) {
+									id, 
+									rating,
+									date
+								}
+							}
+
+							# Variables
+							{
+								rating {
+									book_id: 1, user_id: 1, rating: 5
+								}
+							}
+						</code></pre>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							"addRating": {
+								"id": 15,
+								"rating": 5,
+								"date": "2017-11-01"
+							}
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>You might be wondering how we add, remove or update data</li>
+								<li>Graphql calls these things: mutations</li>
+								<li>Think of them as remote procedure calls</li>
+							</ul>
+						</aside>
+					</section>
+
+					<section>
+						<h2>And more!</h2>
+						<p>But there is no more time...sorry. ¯\_(ツ)_/¯</p>
+						<aside class="notes">
+						</aside>
+					</section>
+				</section>
+
+				<section>
+					<!-- 28 -->
+					<section>
+						<h2>Type system</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							type Book {
+								id: Int,
+								name: String,
+								isbn: String
+							}
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>GraphQL schemas can be built using the GraphQL schema language</li>
+								<li>It's very simple language that can be used to specify the structure of your graphQL API</li>
+								<li>Book is a type</li>
+								<li>id, name & isbn are fields</li>
+								<li>Itt and String are scalar types that represent concrete data in your system</li>
+							</ul>
+						</aside>
+					</section>
+
+					<section>
+						<h2>Scalar types</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							type ScalarGrabBag {
+								id: ID,
+								string: String,
+								float: Float,
+								int: Int,
+								bool: Boolean
+							}
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>ID represents a unique identifier; actually a string</li>
+								<li>Int is a signed 32 bit integer</li>
+								<li>String is UTF-8 char sequence</li>
+								<li>Double precision floating point value</li>
+								<li>Boolean is either true or false</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 30 -->
+					<section>
+						<h2>Hierarchical object types</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							type Book {
+								id: Int,
+								name: String,
+								isbn: String,
+								author: Author
+							}
+
+							type Author {
+								first_name: String,
+								last_name: String
+							}
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Build out your types and compose them</li>
+							</ul>
+						</aside>
+					</section>
+
+					<section>
+						<h2>Type modifiers</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							type Book {
+								id: Int!,
+								name: String,
+								isbn: String,
+								author: Author!,
+								ratings: [Rating]
+							}
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Supports two type modifiers: lists and NotNull</li>
+								<li>The ! after a type indicates that will never be null</li>
+								<li>Wrapping a type in brackets indicates that the type is a list</li>
+								<li>You can combine them as well</li>
+							</ul>
+						</aside>
+					</section>
+
+					<section>
+						<h2>Enumerations</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							enum Currency {
+								USD,
+								CAD,
+								EUR
+							}
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>You can also create enumerations</li>
+								<li>special kind of scalar that is restricted to a particular set of allowed values</li>
+								<li>Ensures that arguments are a certain type - you'll see more in next slide</li>
+								<li>More type safety in action</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 31 -->
+					<section>
+						<h2>Arguments</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							type Book {
+								id: Int!,
+								name: String,
+								isbn: String,
+								price(currency: Currency = USD): Float!
+							}
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Any field can have 0 or more arguments</li>
+								<li>All arguments are named</li>
+								<li>They can be optional or required</li>
+								<li>Optional arguments CAN specify a default value</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 32 -->
+					<section>
+						<h2>Query and mutation types</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							type Query {
+								books: [Book],
+								authors: [Author],
+								users: [User],
+								search(name: String): [SearchResult]
+							}
+						
+							type Mutation {
+								addRating(rating: RatingInput!): Rating
+							}
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Query and Mutation types are special</li>
+								<li>Represent the entry points into the type system</li>
+								<li>All graphql queries start with either query or mutation</li>
+							</ul>
+						</aside>
+					</section>
+
+					<section>
+						<h2>And more!</h2>
+						<p>But there is no more time...sorry. ¯\_(ツ)_/¯</p>
+						<aside class="notes">
+							<ul>
+								<li>Custom scalars</li>
+								<li>Interfaces</li>
+								<li>Input types</li>
+								<li>Union types</li>
+							</ul>
+						</aside>
+					</section>
+				</section>
+
+				<section>
+					<!-- 39 -->
+					<section>
+						<h2>Services</h2>
+						<p class="fragment fade-in">Server-side validation and execution of graphql queries</p>
+						<p class="fragment fade-in">API developers leverage GraphQL server libraries</p>
+						<p class="fragment fade-in">Use the library to build the type system and field resolvers</p>
+						<aside class="notes">
+							<ul>
+								<li>There are server libraries for many popular languages and frameworks</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 40 -->
+					<section>
+						<h2>Step 1: Validation</h2>
+						<p class="fragment fade-in">Comes for free with compliant GraphQL server libraries</p>
+						<aside class="notes">
+							<ul>
+								<li>There are a number of validation rules in place to ensure that a GraphQL query is semantically meaningful</li>
+								<li>Defined in the specification, so a compliant server library will perform the validations automatically</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 41 -->
+					<section>
+						<h2>Step 2: Execution</h2>
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							const books = [...];
+							const authors = [...];
+							const typeDefs = `
+								type Book {
+									id: Int!,
+									name: String,
+									author: Author!
+								type Author {
+									name: String!
+								}
+								query {
+									books: [Book]
+								}
+							}`;
+
+							const resolvers = {
+								Query: {
+									books: () => books
+								}
+								Book: {
+									author: (book) => _.find(authors, { id: book.author_id })
+								}
+							};	
+							</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Think of each field in a query as a function of the previous type</li>
+								<li>These functions are called resolvers</li>
+								<li>When a field is executed, the corresponding resolver is called</li>
+								<li>Which produces the next value</li>
+								<li>The process stops when a leaf field is reached - scalar </li>
+							</ul>
+						</aside>
+					</section>
+				</section>
+
+				<!-- 43 -->
+				<section>
+					<h2>So, how does GraphQL Rescue us?</h2>
+					<aside class="notes">
+						<ul>
+							<li>Now that you have been exposed to GraphQL</li>
+							<li>Let me tell you how it 'Rescues' you from REST / Ad Hoc</li>
+						</ul>
+					</aside>
+				</section>
+
+				<section>
+					<!-- 44 -->
+					<section>
+						<h2>REST APIs</h2>
+						<aside class="notes">
+						</aside>
+					</section>
+
+					<!-- 45 -->
+					<section>
+						<h2>Multiple requests to server required</h2>
+						<div class="code">
+						<pre class="left"><code class="hljs" data-trim data-noescape>
+							{
+								books {
+									id
+									name,
+									author {
+										first_name,
+										last_name,
+										books { name }
+									}
+									ratings { rating }
+								}
+							}
+							</code></pre>
+							<pre class="right"><code class="hljs" data-trim data-noescape>
+								{
+									"books": [
+										{
+											"id": 1,
+											"name": "JavaScript: The...",
+											"author": {
+												"first_name": "David",
+												"last_name": "Flanagan",
+												"books": [
+													{ "name": "JavaScript: T..." }
+												]
+											},
+											"ratings": [
+												{ "rating": 3 }
+											]
+										}
+									]
+								</code></pre>
+							</div>
+						<aside class="notes">
+							<ul>
+								<li>Client constructs 1 query to grab all the info needed</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 46 -->
+					<section>
+						<h2>Payloads grow over time</h2>
+							<pre class="right"><code class="hljs" data-trim data-noescape>
+								{
+									books {
+										name,
+										isbn,
+										author {
+											first_name,
+											last_name,
+											books { name }
+										}
+										price(currency: USD)
+									}
+								}
+							</code></pre>
+							<pre class="right"><code class="hljs" data-trim data-noescape>
+								{
+									books {
+										name,
+										author {
+											last_name
+										}
+									}
+								}
+							</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Client fetches what they need</li>
+								<li>Nothing more</li>
+								<li>If new fields are added, the client does not get them</li>
+								<li>Predictable</li>
+								<li>Stable</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 47 -->
+					<section>
+						<h2>Weakly typed</h2>
+						<pre class="right"><code class="hljs" data-trim data-noescape>
+								{
+									books {
+										name,
+										author { firstName }
+									}
+								}
+
+								# Response
+								{
+									error: "Cannot find field 'firstName' on 'Author'. Did you mean 'first_name'?"
+								}
+							</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>GraphQL has strong typing</li>
+								<li>Built-in validation</li>
+								<li>Tooling support (IDE, Graphiql)</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 48 -->
+					<section>
+						<h2>REST is not a good fit</h2>
+						<p class="fragment fade-in">Designed to promote building client-focused, product-based APIs</p>
+						<aside class="notes">
+							<ul>
+								<li>Designed to promote building client-focused, product-based APIs</li>
+							</ul>
+						</aside>
+					</section>
+				</section>
+
+
+				<section>
+					<!-- 49 -->
+					<section>
+						<h2>Ad hoc APIs</h2>
+						<aside class="notes">
+						</aside>
+					</section>
+
+					<!-- 50 -->
+					<section>
+						<h2>Custom end point per view</h2>
+						<p class="fragment fade-in">Now there is one endpoint: /graphql</p>
+						<aside class="notes">
+							<ul>
+								<li>Eliminates the duplicate code needed to support multiple end points</li>
+								<li>No more orphaned end points</li>
+								<li>No more workarounds to keep the payloads small and focused</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 51 -->
+					<section>
+						<h2>Even simple front end changes often require changes to the API</h2>
+						<p>Not with GraphQL</p>
+						<pre><code class="hljs" data-trim data-noescape>
+							{
+								books {
+									name,
+									author { firstName }<mark class="fragment fade-in">,
+									publish_date</mark>
+								}
+							}
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Add the field to your query and keep going</li>
+								<li>As long as it is part of your schema, no need to change the API</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 52 -->
+					<section>
+						<h2>Payloads grow over time</h2>
+						<aside class="notes">
+							<ul>
+									<li>Client fetches what they need</li>
+									<li>Nothing more</li>
+									<li>If new fields are added, the client does not get them</li>
+									<li>Predictable</li>
+									<li>Stable</li>
+								</ul>
+						</aside>
+					</section>
+
+					<!-- 53 -->
+					<section>
+						<h2>Weakly typed</h2>
+						<aside class="notes">
+							<ul>
+								<li>GraphQL has strong typing</li>
+								<li>Built-in validation</li>
+								<li>Tooling support (IDE, Graphiql)</li>
+							</ul>
+						</aside>
+					</section>
+				</section>
+
+				<section>
+					<!-- 54 -->
+					<section>
+						<h2>Other benefits</h2>
+						<aside class="notes">
+						</aside>
+					</section>
+
+					<!-- 56 -->
+					<section>
+						<h2>Self-documenting</h2>
+						<aside class="notes">
+							<ul>
+								<li>The type system allows great tooling</li>
+								<li>GraphiQL</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 57 -->
+					<section>
+						<h2>Application protocol</h2>
+						<aside class="notes">
+							<ul>
+								<li>It's not reliant on HTTP</li>
+								<li>Could use TCP, web sockets or any other transport protocol</li>
+								<li>Even email?</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 58 -->
+					<section>
+						<h2>Better versioning</h2>
+						<aside class="notes">
+							<ul>
+								<li>Adding fields to existing types carries no performance penalty</li>
+								<li>You can mark fields as deprecated</li>
+								<li>And then remove them when you are sure they are not being used</li>
+								<li>And you can use tooling to know when the field is no longer being used</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 59 -->
+					<section>
+						<h2>Great tooling support</h2>
+						<img src="tooling.png">
+						<aside class="notes">
+							<ul>
+								<li>Built-in type system and introspection eases tool creation</li>
+								<li>Intellisense support, like in GraphiQL</li>
+							</ul>
+						</aside>
+					</section>
+				</section>
+
+				<section>
+					<!-- 60 -->
+					<section>
+						<h2>What are some challenges?</h2>
+						<aside class="notes">
+							<ul>
+								<li>It's not all rainbows and butterflies</li>
+								<li>It's not all doritos and beer (IPA)</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 61 -->
+					<section>
+						<h2>Lack of best practices</h2>
+						<aside class="notes">
+							<ul>
+								<li>It's less than 3 years old</li>
+								<li>It's getting better, but nowhere near as good as REST</li>
+								<li>It can take some time for best practices to evolve</li>
+								<li>You may need to figure it the bet way to do it on your own</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 62 -->
+					<section>
+						<h2>Breaks HTTP Caching</h2>
+						<aside class="notes">
+							<ul>
+								<li>The single end point breaks traditional URL based caching</li>
+								<li>There are ways around it but they are not well documented.</li>
+								<li>See best practices above</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 63 -->
+					<section>
+						<h2>Overly complex queries</h2>
+						<pre><code class="hljs" data-trim data-noescape>
+							{
+								books {
+									name,
+									author {
+										books {
+											author {
+												books {
+													author {
+														last_name
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>For complex type systems</li>
+								<li>Client can construct crazy queries that could tax your API</li>
+								<li>Mitigate by: query cost analysis, rate limiting or whitelisting queries</li>
+							</ul>
+						</aside>
+					</section>
+
+					<!-- 64 -->
+					<section>
+						<h2>n+1 query problem</h2>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
+								{
+									books {
+										name,
+										author {
+											books {
+												name
+											}
+										}
+									}
+								}
+							</code></pre>
+						<aside class="notes">
+							<ul>
+								<li>Doing expensive operations (like IO, queries) in looping operations</li>
+								<li>The 'author' resolver is called for each book</li>
+								<li>The author.books resolver is called for each author</li>
+								<li>In graphql, field resolvers are decoupled from each other and executed independently</li>
+								<li>Use DataLoader, a data caching and batching utility</li>
+							</ul>
+						</aside>
+					</section>
+				</section>
+
+				<!-- 65 -->
+				<section>
+					<h2>Ya'll ready for some code?</h2>
+				</section>
+
+				<!-- 66 -->
+				<section>
+					<h2>Resources</h2>
+					<h4>Background & Documentation</h4>
+					<p><a href="http://graphql.org/">GraphQL</a> &raquo; 
+					<a href="http://graphql.org/learn/">Docs</a> &raquo; 
+					<a href="http://graphql.org/community/">Community Resources</a> &raquo;
+					<a href="http://facebook.github.io/graphql/October2016/">GraphQL Spec</a> &raquo;
+					<a href="https://www.graphql.com/">Explore GraphQL</a> &raquo;
+					<a href="https://www.howtographql.com/">Fullstack Tutorial</a>
+					</p>
+					<p>
+					<h4>Server Libraries</h4>
+					<a href="http://graphql.org/graphql-js/">GraphQL.js</a> &raquo; 
+					<a href="http://graphql.org/graphql-js/running-an-express-graphql-server/">Express</a> &raquo; 
+					<a href="http://dev.apollodata.com/tools/graphql-server/index.html">Apollo</a> &raquo;
+					<a href="https://github.com/graphql-dotnet/graphql-dotnet">GraphQL for .NET</a> &raquo;
+					<a href="https://github.com/graphql-java/graphql-java">GraphQL for Java</a> &raquo;
+					<a href="http://graphql.org/code/">and more</a>
+					</p>
+					<p>
+					<h4>Client Libraries</h4>
+					<a href="https://www.apollographql.com/docs/react/">Apollo React</a> &raquo; 
+					<a href="https://www.apollographql.com/docs/angular/">Apollo Angular</a> &raquo; 
+					<a href="https://www.apollographql.com/docs/ios/">Apollo iOS</a> &raquo;
+					<a href="https://github.com/apollographql/apollo-android">Apollo Android</a> &raquo;
+					<a href="https://www.apollographql.com/client/">and more</a>
+					</p>
+					<p>
+					<h4>Tools</h4>
+					<a href="https://launchpad.graphql.com/new">Apollo Launchpad</a> &raquo; 
+					<a href="http://www.apollodata.com/optics/">Apollo Optics</a> &raquo; 
+					<a href="https://optics.apollodata.com/account/gh.jayhogan">GraphiQL</a>
+					</p>
+					<p>
+					<h4>Hosted GraphQL (BaaS)</h4>
+					<a href="https://www.graph.cool/">Graphcool</a> &raquo;
+					<a href="https://scaphold.io/">Scaphold</a>
+					</p>
+				</section>
+
+				<!-- 67 -->
+				<section>
+					<h2>Thank You</h2>
+				</section>
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				width: 1920,
+				height: 1200,
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { 
+						hljs.configure({ tabReplace: '  '});
+						hljs.initHighlightingOnLoad();
+					} }
+				]
+			});
+		</script>
+	</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "graphql-rescue",
+  "version": "0.0.1",
+  "description": "Sample app for GraphQL to Rescue 2017 RVA Javascript talk",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "jayhogan",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "apollo-server-express": "^1.2.0",
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2",
+    "express-graphql": "^0.6.11",
+    "graphql": "^0.11.7",
+    "graphql-scalars": "^0.1.4",
+    "graphql-tools": "^2.6.1",
+    "lodash": "^4.17.4"
+  }
+}
