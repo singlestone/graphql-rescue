@@ -25,6 +25,10 @@
 			.reveal pre code {
 				max-height: 800px;
 			}
+			.reveal section .logos img {
+				border: none;
+				box-shadow: none;
+			}
 		</style>
 		<!-- Printing and PDF exports -->
 		<script>
@@ -41,17 +45,25 @@
 				<!-- 1 -->
 				<section>
 					<h1>GraphQL to the Rescue</h1>
+					<br/>
+					<br/>
 					<p>
-						<small>Presented by <a href="https://twitter.com/jayhogan">Jay Hogan</a></small><br/>
-						<small>Application Development Lead, <a href="https://www.singlestoneconsulting.com">SingleStone Consulting</a></small>
+						<small>Presented by <a href="https://twitter.com/jayhogan">@jayhogan</a></small><br/>
+						<small>Application Development Lead, <a href="https://www.singlestoneconsulting.com/service-offerings/software-applications">SingleStone Consulting</a></small>
 					</p>
+					<br/>
+					<br/>
+					<br/>
+					<div class="logos">
+						<!--img src="graphql_logo.jpg" width="400"><br/-->
+						<img src="ss_logocolor.svg" height="100">
+					</div>
 					<aside class="notes">
 							<ul>
 									<li>Work for SingleStone - CX consulting firm here in Richmond</li>
-									<li>Building web-based applications for past 12 years</li>
-									<li>Been in IT for over 20 years, most of that time as a hands-on-keyboard developer</li>
-									<li>Show of hands - front end dev, back end dev, full stack ninjas, not a dev</li>
-									<li>Show of hands - at the wrong conference</li>
+									<li>Been in IT for over 20 years, most of that time as a hands-on-keyboard developer. Web stuff for past 12 years</li>
+									<li>Show of hands - front end dev, back end dev, full stack ninjas, everyone else raise your hand</li>
+									<li>Keep your hands up if - heard of GraphQL, toyed with it, used it on a project, contribute to it, work for Facebook</li>
 								</ul>
 					</aside>
 				</section>
@@ -65,6 +77,7 @@
 						<li>Why does it exist?</li>
 						<li>Deep dive</li>
 						<li>Why should you use it?</li>
+						<li>Challenges with GraphQL</li>
 						<li>Obligatory code walk-through</li>
 					</ol>
 				</section>
@@ -77,11 +90,11 @@
 					<p class="fragment fade-in">A server-side runtime to execute queries</p>
 					<aside class="notes">
 						<ul>
-							<li>Client constructs queries using query language (like SQL or Mongo's query lang)</li>
+							<li>Think of it as SQL or mongo QL, but for an API</li>
 							<li>Type system defines valid types and fields for your use case</li>
 							<li>Server-side runtime parses and executes the query using the resolver functions that you provide</li>
-							<li>It's not tied to any persistence system</li>
 							<li>It's a specification, not a library.</li>
+							<li>It's not tied to any persistence system</li>
 							<li>Reference implementation in Javascript</li>
 							<li>Ported to all major client environments and many server environments</li>
 						</ul>
@@ -95,7 +108,6 @@
 						<ul>
 							<li>Created by Facebook in 2012</li>
 							<li>during move from HTML5 mobile apps to purely native applications</li>
-							<li>Data fetching challenges</li>
 							<li>Needed a better a way to get data from the server to the client</li>
 							<li>Like everyone else at the time (and still today), Facebook used REST and Ad Hoc approaches to build APIs</li>
 						</ul>
@@ -106,7 +118,7 @@
 					<!-- 7 -->
 					<section>
 						<h2>Challenges with REST</h2>
-						<pre><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 GET http://myapi.io/author/2
 HTTP/1.1 200 OK
 {
@@ -114,14 +126,14 @@ HTTP/1.1 200 OK
 	"last_name":"Crockford"
 }
 
-GET http://myapi.io/author/2/books
+<span class="fragment fade-in">GET http://myapi.io/author/2/books
 HTTP/1.1 200 OK
 [{
 	"id":3,
 	"name":"Javascript: The Good Parts",
 	"isbn":"0596517742",
 	"publish_date":"2016-05-31"
-}]
+}]</span>
 						</code></pre>
 						<aside class="notes">
 							<ul>
@@ -137,19 +149,21 @@ HTTP/1.1 200 OK
 					<!-- 8 -->
 					<section>
 						<h2>Multiple requests to server required</h2>
-						<pre><code class="hljs" data-trim data-noescape>
-							GET http://myapi.io/books
-							<span class="fragment fade-in">GET http://myapi.io/book/1</span>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
+							GET http://myapi.io/books<span class="fragment fade-in">
+							# For each book - yikes!
+							GET http://myapi.io/book/1</span>
 							<span class="fragment fade-in">GET http://myapi.io/book/1/ratings</span>
 							<span class="fragment fade-in">GET http://myapi.io/author/2</span>
 							<span class="fragment fade-in">GET http://myapi.io/author/2/books</span>
 						</code></pre>
 						<aside class="notes">
 							<ul>
-								<li>Even simple views require multiple round trip requests to server</li>
+								<li>Even simple views require multiple API calls to fetch all of the needed data</li>
 								<li>Scenario - Book Store - book search requests</li>
-								<li>List of books</li>
-								<li>Average rating, author bio snippet, also by author in the search results</li>
+								<li>Start with a simple list of books</li>
+								<li>Let's add book ISBN - not in the book search</li>
+								<li>Then add: Average rating, author bio snippet, "also by" author in the search results</li>
 							</ul>
 						</aside>
 					</section>
@@ -157,21 +171,20 @@ HTTP/1.1 200 OK
 					<!-- 9 -->
 					<section>
 						<h2>Response payloads grow over time</h2>
-						<pre><code class="hljs" data-trim data-noescape>							
-							GET http://myapi.io/book/3<span class="fragment fade-in">?view=full</span>
+						<pre class="fragment fade-in" data-fragment-index="1"><code class="hljs" data-trim data-noescape>							
+							GET http://myapi.io/book/3<span class="fragment fade-in" data-fragment-index="4"><mark>?view=full</mark></span>
 							{
 								"id":3,
 								"name":"Javascript: The Good Parts",
-								"isbn":"0596517742",
-								"publish_date":"2016-05-31".
+								"isbn":"0596517742"<span class="fragment fade-in" data-fragment-index="2">,
+								"publish_date":"2016-05-31"</span><span class="fragment fade-in" data-fragment-index="3">,
 								"author": {
 									"first_name":"Douglas",
 									"last_name":"Crockford"
-								},
-								...
+								}</span>
 							}
 
-							<span class="fragment fade-in">
+							<span class="fragment fade-in" data-fragment-index="4">
 							GET http://myapi.io/book/3?view=compact
 							{
 								"id":3,
@@ -182,9 +195,10 @@ HTTP/1.1 200 OK
 						<aside class="notes">
 							<ul>
 								<li>Fields are added to end points as requirements change (diff views, new clients, etc..)</li>
+								<li>To support different views and devices</li>
 								<li>When this happens, all clients are affected by the change</li>
 								<li>Could be solved by overlaying a versioning system</li>
-								<li>Or by baking flexibility into the end point (compact, full, etc..)</li>
+								<li>Or by baking some flexibility into the end point (compact, full, etc..)</li>
 							</ul>
 						</aside>
 					</section>
@@ -192,19 +206,20 @@ HTTP/1.1 200 OK
 					<!-- 10 -->
 					<section>
 						<h2>Weakly typed</h2>
-						<pre><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							GET http://myapi.io/book/A
 							HTTP/1.1 500
 							Unexpected error
 
 
-							POST http://myapi.io/book/1
-							{ "foo":"bar"}
+							<span class="fragment fade-in">POST http://myapi.io/book/1
+							{"foo":"bar"}
 							HTTP/1.1 500
-							Unexpected error
+							Unexpected error</span>
 						</code></pre>
 						<aside class="notes">
 							<ul>
+								<li>The degree to which type constraints are applied, verified and enforced</li>
 								<li>We could debate the merits of strong typing vs weak typing ad nauseum</li>
 								<li>There are some significant disadvantages to weak typing</li>
 								<li>Lots of server-side validation required. Cannot guarentee correctness (syntactically)</li>
@@ -217,7 +232,10 @@ HTTP/1.1 200 OK
 					<!-- 11 -->
 					<section>
 						<h2>REST is not a good fit</h2>
-						<blockquote>REST is intended for long-lived network-based applications that span multiple organizations</blockquote>
+						<br/>
+						<blockquote class="fragment fade-in">"REST is intended for long-lived network-based applications that span multiple organizations." -- Roy Fielding</blockquote>
+						<br/>
+						<blockquote class="fragment fade-in">"What needs to be done to make the REST architectural style clear on the notion that hypertext is a constraint?"  -- Roy Fielding</blockquote>
 						<aside class="notes">
 							<ul>
 								<li>Roy Fielding has stated, repeatedly, that REST APIs must be hypertext driven</li>
@@ -231,7 +249,7 @@ HTTP/1.1 200 OK
 				<section>
 					<!-- 12 -->
 					<section>
-						<h2>Challenges with Ad Hoc APIs</h2>
+						<h2>What about Ad Hoc APIs?</h2>
 						<aside class="notes">
 							<ul>
 								<li>Many teams start with "Let's do REST right"</li>
@@ -243,22 +261,22 @@ HTTP/1.1 200 OK
 					<!-- 13 -->
 					<section>
 						<h2>Custom end point per view</h2>
-						<pre><code class="hljs" data-trim data-noescape>
-							GET http://myapi.io/bookSearch
-							<span class="fragment fade-in">GET http://myapi.io/bookView</span>
+						<pre lass="fragment fade-in"><code class="hljs" data-trim data-noescape>
+							GET http://myapi.io/book
 
-							<span class="fragment fade-in">GET http://myapi.io/bookEdit</span>
-
-							<span class="fragment fade-in">GET http://myapi.io/authorView</span>
+							<span class="fragment fade-in">GET http://myapi.io/bookComparison</span>
 							
-							<span class="fragment fade-in">GET http://myapi.io/authorViewMobile</span>
+							<span class="fragment fade-in">GET http://myapi.io/bookSnippet</span>
+
+							<span class="fragment fade-in">GET http://myapi.io/bookMobile</span>
 						</code></pre>
 						<aside class="notes">
 							<ul>
+									<li>Start with a base end point and then create custom end points for various use-cases</li>
 									<li>Maintenance nightmare</li>
 									<li>Massive code duplication</li>
 									<li>Orphaned end points</li>
-									<li>Good teams tackle this with frameworks, tooling and solide engineering practices</li>
+									<li>Good teams tackle this with frameworks, tooling and solid engineering practices</li>
 								</ul>
 						</aside>
 					</section>
@@ -266,11 +284,12 @@ HTTP/1.1 200 OK
 					<!-- 14 -->
 					<section>
 						<h2>Even simple front end changes often require changes to the server</h2>
-						<p class="fragment fade-in">Product Owner: <q>Can I add the publication date to the page?</q></p>
+						<p class="fragment fade-in">Product Owner: <q>Can I add the book publication date to the page?</q></p>
 						<p class="fragment fade-in">Developer: <q>That's a 3 point story.</q></p>
 						<p class="fragment fade-in">Product Owner: <q>But it's just a simple date!</q></p>
 						<aside class="notes">
 							<ul>
+								<li>Consider this scenario: add book pub date to page</li>
 								<li>Update the database query</li>
 								<li>Update the view model</li>
 								<li>Update the tests</li>
@@ -279,7 +298,7 @@ HTTP/1.1 200 OK
 						</aside>
 					</section>
 
-					<!-- 15 -->
+					<!--
 					<section>
 						<h2>Payloads grow over time</h2>
 						<aside class="notes">
@@ -292,7 +311,6 @@ HTTP/1.1 200 OK
 						</aside>
 					</section>
 
-					<!-- 16 -->
 					<section>
 						<h2>Weakly typed</h2>
 						<aside class="notes">
@@ -301,25 +319,19 @@ HTTP/1.1 200 OK
 							</ul>
 						</aside>
 					</section>
+				-->
 				</section>
 
 				<!-- 17 -->
 				<section>
 					<h2>GraphQL Deep Dive</h2>
-					<img src="show_me_the_money.jpg">
-					<aside class="notes">
-						<ul>
-							<li>Jerry McGuire released in 1996</li>
-							<li>Javascript was released in 1995</li>
-						</ul>
-					</aside>
 				</section>
 
 				<section>
 					<!-- 18 -->
 					<section>
 						<h2>Query language</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
 									name,
@@ -331,24 +343,24 @@ HTTP/1.1 200 OK
 								}
 							}
 						</code></pre>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
-							"books":
-							[{
-								"name": "JavaScript: The Definitive Guide",
-								"author": {
-									"first_name": "David",
-									"last_name": "Flanagan"
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
+							"books": [
+								{
+									"name": "JavaScript: The Definitive Guide",
+									"author": {
+										"first_name": "David",
+										"last_name": "Flanagan"
+									},
+									"publish_date": "2011-05-13"
 								},
-								"publish_date": "2011-05-13"
-							},
-							{
-								"name": "JavaScript: Pocket Reference",
-								"author": {
-									"first_name": "David",
-									"last_name": "Flanagan"
-								},
-								"publish_date": "2012-04-28"
-							}]
+								{
+									"name": "JavaScript: Pocket Reference",
+									"author": {
+										"first_name": "David",
+										"last_name": "Flanagan"
+									},
+									"publish_date": "2012-04-28"
+								}]
 						</code></pre>
 						<aside class="notes">
 							<ul>
@@ -362,7 +374,7 @@ HTTP/1.1 200 OK
 					<!-- 20 -->
 					<section>
 						<h2>Arguments</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
 									name,
@@ -370,21 +382,21 @@ HTTP/1.1 200 OK
 								}
 							}
 						</code></pre>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
-							"books":
-							[{
-								"name": "JavaScript: The Definitive Guide",
-								"price": 32.64
-							},
-							{
-								"name": "JavaScript: Pocket Reference",
-								"price": 13.47
-							}]
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
+							"books": [
+								{
+									"name": "JavaScript: The Definitive Guide",
+									"price": 32.64
+								},
+								{
+									"name": "JavaScript: Pocket Reference",
+									"price": 13.47
+								}]
 						</code></pre>
 						<aside class="notes">
 							<ul>
 								<li>Fields can have arguments that trigger actions that occur on the server</li>
-								<li>In this case, currency conversion</li>
+								<li>Price converted into different currencies</li>
 							</ul>
 						</aside>
 					</section>
@@ -392,7 +404,7 @@ HTTP/1.1 200 OK
 					<!-- 21 -->
 					<section>
 						<h2>Aliases</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
 									name,
@@ -401,22 +413,22 @@ HTTP/1.1 200 OK
 								}
 							}
 						</code></pre>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
-							"books":
-							[{
-								"name": "JavaScript: The Definitive Guide",
-								"price": 32.64,
-								"euPrice": 28.0704
-							},
-							{
-								"name": "JavaScript: Pocket Reference",
-								"price": 13.47,
-								"euPrice": 11.584200000000001
-							}]
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
+							"books": [
+								{
+									"name": "JavaScript: The Definitive Guide",
+									"price": 32.64,
+									"euPrice": 28.0704
+								},
+								{
+									"name": "JavaScript: Pocket Reference",
+									"price": 13.47,
+									"euPrice": 11.584200000000001
+								}]
 						</code></pre>
 						<aside class="notes">
 							<ul>
-								<li>Let's you re-use the name of the field anyway you want</li>
+								<li>Let's you re-name of the field anyway you want</li>
 								<li>In this case, an alias is the only way to fetch both prices</li>
 							</ul>
 						</aside>
@@ -426,7 +438,7 @@ HTTP/1.1 200 OK
 
 					<section>
 						<h2>Variables</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
 									name,
@@ -434,21 +446,21 @@ HTTP/1.1 200 OK
 								}
 							}
 
-							# Variables
+							<span class="fragment fade-in"># Variables
 							{
 								currency: "USD"
-							}
+							}</span>
 						</code></pre>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
-							"books":
-							[{
-								"name": "JavaScript: The Definitive Guide",
-								"price": 32.64
-							},
-							{
-								"name": "JavaScript: Pocket Reference",
-								"price": 13.47
-							}]
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
+							"books": [
+								{
+									"name": "JavaScript: The Definitive Guide",
+									"price": 32.64
+								},
+								{
+									"name": "JavaScript: Pocket Reference",
+									"price": 13.47
+								}]
 						</code></pre>
 						<aside class="notes">
 							<ul>
@@ -456,6 +468,7 @@ HTTP/1.1 200 OK
 								<li>Bad things happen</li>
 								<li>In grapohQL, you can use variables to create arguments in your query</li>
 								<li>The client library provides a mechanism to call the query and pass in the variables</li>
+								<li>Safely interpolates the dynamic criteria before passing to server</li>
 							</ul>
 						</aside>
 					</section>
@@ -463,7 +476,7 @@ HTTP/1.1 200 OK
 					<!-- 26 -->
 					<section>
 						<h2>Mutations</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							mutation {
 								addRating(rating: $rating) {
 									id, 
@@ -479,7 +492,7 @@ HTTP/1.1 200 OK
 								}
 							}
 						</code></pre>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							"addRating": {
 								"id": 15,
 								"rating": 5,
@@ -489,7 +502,8 @@ HTTP/1.1 200 OK
 						<aside class="notes">
 							<ul>
 								<li>You might be wondering how we add, remove or update data</li>
-								<li>Graphql calls these things: mutations</li>
+								<li>In graphql these are called mutations</li>
+								<li>They are defined as part of the type system</li>
 								<li>Think of them as remote procedure calls</li>
 							</ul>
 						</aside>
@@ -507,7 +521,7 @@ HTTP/1.1 200 OK
 					<!-- 28 -->
 					<section>
 						<h2>Type system</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type Book {
 								id: Int,
 								name: String,
@@ -516,7 +530,7 @@ HTTP/1.1 200 OK
 						</code></pre>
 						<aside class="notes">
 							<ul>
-								<li>GraphQL schemas can be built using the GraphQL schema language</li>
+								<li>GraphQL schemas are created using the GraphQL schema language</li>
 								<li>It's very simple language that can be used to specify the structure of your graphQL API</li>
 								<li>Book is a type</li>
 								<li>id, name & isbn are fields</li>
@@ -527,7 +541,7 @@ HTTP/1.1 200 OK
 
 					<section>
 						<h2>Scalar types</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type ScalarGrabBag {
 								id: ID,
 								string: String,
@@ -538,10 +552,11 @@ HTTP/1.1 200 OK
 						</code></pre>
 						<aside class="notes">
 							<ul>
-								<li>ID represents a unique identifier; actually a string</li>
-								<li>Int is a signed 32 bit integer</li>
+								<li>There are 5 built-in scalar types</li>
+								<li>ID represents a unique identifier; stored a string</li>
 								<li>String is UTF-8 char sequence</li>
-								<li>Double precision floating point value</li>
+								<li>Float is a double precision floating point value</li>
+								<li>Int is a signed 32 bit integer</li>
 								<li>Boolean is either true or false</li>
 							</ul>
 						</aside>
@@ -549,8 +564,8 @@ HTTP/1.1 200 OK
 
 					<!-- 30 -->
 					<section>
-						<h2>Hierarchical object types</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<h2>Composable, hierarchical object types</h2>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type Book {
 								id: Int,
 								name: String,
@@ -572,7 +587,7 @@ HTTP/1.1 200 OK
 
 					<section>
 						<h2>Type modifiers</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type Book {
 								id: Int!,
 								name: String,
@@ -593,7 +608,7 @@ HTTP/1.1 200 OK
 
 					<section>
 						<h2>Enumerations</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							enum Currency {
 								USD,
 								CAD,
@@ -603,7 +618,7 @@ HTTP/1.1 200 OK
 						<aside class="notes">
 							<ul>
 								<li>You can also create enumerations</li>
-								<li>special kind of scalar that is restricted to a particular set of allowed values</li>
+								<li>special kind of scalar that is restricted to a distinct set of allowed values</li>
 								<li>Ensures that arguments are a certain type - you'll see more in next slide</li>
 								<li>More type safety in action</li>
 							</ul>
@@ -613,7 +628,7 @@ HTTP/1.1 200 OK
 					<!-- 31 -->
 					<section>
 						<h2>Arguments</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type Book {
 								id: Int!,
 								name: String,
@@ -623,7 +638,7 @@ HTTP/1.1 200 OK
 						</code></pre>
 						<aside class="notes">
 							<ul>
-								<li>Any field can have 0 or more arguments</li>
+								<li>A field can have 0 or more arguments</li>
 								<li>All arguments are named</li>
 								<li>They can be optional or required</li>
 								<li>Optional arguments CAN specify a default value</li>
@@ -634,7 +649,7 @@ HTTP/1.1 200 OK
 					<!-- 32 -->
 					<section>
 						<h2>Query and mutation types</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type Query {
 								books: [Book],
 								authors: [Author],
@@ -678,7 +693,7 @@ HTTP/1.1 200 OK
 						<p class="fragment fade-in">Use the library to build the type system and field resolvers</p>
 						<aside class="notes">
 							<ul>
-								<li>There are server libraries for many popular languages and frameworks</li>
+								<li>The code running on the server</li>
 							</ul>
 						</aside>
 					</section>
@@ -691,6 +706,7 @@ HTTP/1.1 200 OK
 							<ul>
 								<li>There are a number of validation rules in place to ensure that a GraphQL query is semantically meaningful</li>
 								<li>Defined in the specification, so a compliant server library will perform the validations automatically</li>
+								<li>Check the reference implementation or read the specification if you are curious</li>
 							</ul>
 						</aside>
 					</section>
@@ -698,7 +714,7 @@ HTTP/1.1 200 OK
 					<!-- 41 -->
 					<section>
 						<h2>Step 2: Execution</h2>
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							const books = [...];
 							const authors = [...];
 							const typeDefs = `
@@ -725,11 +741,11 @@ HTTP/1.1 200 OK
 							</code></pre>
 						<aside class="notes">
 							<ul>
-								<li>Think of each field in a query as a function of the previous type</li>
+								<li>You can think of each field in a query as a function that accepts an argument of the parent's type</li>
 								<li>These functions are called resolvers</li>
 								<li>When a field is executed, the corresponding resolver is called</li>
-								<li>Which produces the next value</li>
-								<li>The process stops when a leaf field is reached - scalar </li>
+								<li>The resolvers job is to produce the value of the required type</li>
+								<li>This process continues until scalar values are reached</li>
 							</ul>
 						</aside>
 					</section>
@@ -737,7 +753,7 @@ HTTP/1.1 200 OK
 
 				<!-- 43 -->
 				<section>
-					<h2>So, how does GraphQL Rescue us?</h2>
+					<h2>Rescue Me!</h2>
 					<aside class="notes">
 						<ul>
 							<li>Now that you have been exposed to GraphQL</li>
@@ -757,8 +773,7 @@ HTTP/1.1 200 OK
 					<!-- 45 -->
 					<section>
 						<h2>Multiple requests to server required</h2>
-						<div class="code">
-						<pre class="left"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
 									id
@@ -772,26 +787,24 @@ HTTP/1.1 200 OK
 								}
 							}
 							</code></pre>
-							<pre class="right"><code class="hljs" data-trim data-noescape>
-								{
-									"books": [
-										{
-											"id": 1,
-											"name": "JavaScript: The...",
-											"author": {
-												"first_name": "David",
-												"last_name": "Flanagan",
-												"books": [
-													{ "name": "JavaScript: T..." }
-												]
-											},
-											"ratings": [
-												{ "rating": 3 }
+							<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
+								{ "books": [
+									{
+										"id": 1,
+										"name": "JavaScript: The...",
+										"author": {
+											"first_name": "David",
+											"last_name": "Flanagan",
+											"books": [
+												{ "name": "JavaScript: T..." }
 											]
-										}
-									]
-								</code></pre>
-							</div>
+										},
+										"ratings": [
+											{ "rating": 3 }
+										]
+									}
+								]}
+							</code></pre>
 						<aside class="notes">
 							<ul>
 								<li>Client constructs 1 query to grab all the info needed</li>
@@ -802,7 +815,7 @@ HTTP/1.1 200 OK
 					<!-- 46 -->
 					<section>
 						<h2>Payloads grow over time</h2>
-							<pre class="right"><code class="hljs" data-trim data-noescape>
+							<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 								{
 									books {
 										name,
@@ -816,7 +829,7 @@ HTTP/1.1 200 OK
 									}
 								}
 							</code></pre>
-							<pre class="right"><code class="hljs" data-trim data-noescape>
+							<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 								{
 									books {
 										name,
@@ -840,19 +853,19 @@ HTTP/1.1 200 OK
 					<!-- 47 -->
 					<section>
 						<h2>Weakly typed</h2>
-						<pre class="right"><code class="hljs" data-trim data-noescape>
-								{
-									books {
-										name,
-										author { firstName }
-									}
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
+							{
+								books {
+									name,
+									author { firstName }
 								}
+							}
 
-								# Response
-								{
-									error: "Cannot find field 'firstName' on 'Author'. Did you mean 'first_name'?"
-								}
-							</code></pre>
+							# Response
+							{
+								error: "Cannot find field 'firstName' on 'Author'. Did you mean 'first_name'?"
+							}
+						</code></pre>
 						<aside class="notes">
 							<ul>
 								<li>GraphQL has strong typing</li>
@@ -868,7 +881,7 @@ HTTP/1.1 200 OK
 						<p class="fragment fade-in">Designed to promote building client-focused, product-based APIs</p>
 						<aside class="notes">
 							<ul>
-								<li>Designed to promote building client-focused, product-based APIs</li>
+								<li>Designed for building client-focused, product-based APIs</li>
 							</ul>
 						</aside>
 					</section>
@@ -900,7 +913,7 @@ HTTP/1.1 200 OK
 					<section>
 						<h2>Even simple front end changes often require changes to the API</h2>
 						<p>Not with GraphQL</p>
-						<pre><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
 									name,
@@ -917,7 +930,7 @@ HTTP/1.1 200 OK
 						</aside>
 					</section>
 
-					<!-- 52 -->
+					<!--
 					<section>
 						<h2>Payloads grow over time</h2>
 						<aside class="notes">
@@ -931,7 +944,6 @@ HTTP/1.1 200 OK
 						</aside>
 					</section>
 
-					<!-- 53 -->
 					<section>
 						<h2>Weakly typed</h2>
 						<aside class="notes">
@@ -942,17 +954,17 @@ HTTP/1.1 200 OK
 							</ul>
 						</aside>
 					</section>
+				-->
 				</section>
 
+				<!-- Out of time
 				<section>
-					<!-- 54 -->
 					<section>
 						<h2>Other benefits</h2>
 						<aside class="notes">
 						</aside>
 					</section>
 
-					<!-- 56 -->
 					<section>
 						<h2>Self-documenting</h2>
 						<aside class="notes">
@@ -963,7 +975,6 @@ HTTP/1.1 200 OK
 						</aside>
 					</section>
 
-					<!-- 57 -->
 					<section>
 						<h2>Application protocol</h2>
 						<aside class="notes">
@@ -975,7 +986,6 @@ HTTP/1.1 200 OK
 						</aside>
 					</section>
 
-					<!-- 58 -->
 					<section>
 						<h2>Better versioning</h2>
 						<aside class="notes">
@@ -988,7 +998,6 @@ HTTP/1.1 200 OK
 						</aside>
 					</section>
 
-					<!-- 59 -->
 					<section>
 						<h2>Great tooling support</h2>
 						<img src="tooling.png">
@@ -1000,6 +1009,7 @@ HTTP/1.1 200 OK
 						</aside>
 					</section>
 				</section>
+			-->
 
 				<section>
 					<!-- 60 -->
@@ -1041,7 +1051,7 @@ HTTP/1.1 200 OK
 					<!-- 63 -->
 					<section>
 						<h2>Overly complex queries</h2>
-						<pre><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
 									name,
@@ -1072,17 +1082,17 @@ HTTP/1.1 200 OK
 					<section>
 						<h2>n+1 query problem</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
-								{
-									books {
-										name,
-										author {
-											books {
-												name
-											}
+							{
+								books {
+									name,
+									author { # Resolver is called for each book
+										books { # Resolver is called for each book, author
+											name
 										}
 									}
 								}
-							</code></pre>
+							}
+						</code></pre>
 						<aside class="notes">
 							<ul>
 								<li>Doing expensive operations (like IO, queries) in looping operations</li>
@@ -1097,14 +1107,23 @@ HTTP/1.1 200 OK
 
 				<!-- 65 -->
 				<section>
-					<h2>Ya'll ready for some code?</h2>
+					<h2>Show me the CODE!</h2>
+					<img src="show_me_the_money.jpg">
+					<aside class="notes">
+						<ul>
+							<li>Jerry McGuire released in 1996</li>
+							<li>Javascript was released in 1995</li>
+						</ul>
+					</aside>
 				</section>
 
 				<!-- 66 -->
 				<section>
 					<h2>Resources</h2>
 					<h4>Background & Documentation</h4>
-					<p><a href="http://graphql.org/">GraphQL</a> &raquo; 
+					<p>
+					<a hred="https://github.com/singlestone/graphql-rescue">singlestone/graphql-rescue</a> &raquo; 
+					<a href="http://graphql.org/">GraphQL</a> &raquo; 
 					<a href="http://graphql.org/learn/">Docs</a> &raquo; 
 					<a href="http://graphql.org/community/">Community Resources</a> &raquo;
 					<a href="http://facebook.github.io/graphql/October2016/">GraphQL Spec</a> &raquo;
