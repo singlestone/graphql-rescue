@@ -42,6 +42,7 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
+					
 				<!-- 1 -->
 				<section>
 					<h1>GraphQL to the Rescue</h1>
@@ -151,10 +152,14 @@ HTTP/1.1 200 OK
 						<h2>Multiple requests to server required</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							GET http://myapi.io/books<span class="fragment fade-in">
+
 							# For each book - yikes!
 							GET http://myapi.io/book/1</span>
+							
 							<span class="fragment fade-in">GET http://myapi.io/book/1/ratings</span>
+							
 							<span class="fragment fade-in">GET http://myapi.io/author/2</span>
+							
 							<span class="fragment fade-in">GET http://myapi.io/author/2/books</span>
 						</code></pre>
 						<aside class="notes">
@@ -261,7 +266,7 @@ HTTP/1.1 200 OK
 					<!-- 13 -->
 					<section>
 						<h2>Custom end point per view</h2>
-						<pre lass="fragment fade-in"><code class="hljs" data-trim data-noescape>
+						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							GET http://myapi.io/book
 
 							<span class="fragment fade-in">GET http://myapi.io/bookComparison</span>
@@ -477,12 +482,14 @@ HTTP/1.1 200 OK
 					<section>
 						<h2>Mutations</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
-							mutation {
+							mutation AddRating(rating: RatingInput!) {
+
 								addRating(rating: $rating) {
 									id, 
 									rating,
 									date
 								}
+
 							}
 
 							# Variables
@@ -589,11 +596,11 @@ HTTP/1.1 200 OK
 						<h2>Type modifiers</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type Book {
-								id: Int!,
+								id: Int!, # id will never be null
 								name: String,
 								isbn: String,
 								author: Author!,
-								ratings: [Rating]
+								ratings: [Rating] # ratings is a list/array
 							}
 						</code></pre>
 						<aside class="notes">
@@ -715,29 +722,18 @@ HTTP/1.1 200 OK
 					<section>
 						<h2>Step 2: Execution</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
-							const books = [...];
-							const authors = [...];
-							const typeDefs = `
-								type Book {
-									id: Int!,
-									name: String,
-									author: Author!
-								type Author {
-									name: String!
-								}
-								query {
-									books: [Book]
-								}
-							}`;
+								{
+									books {           <span class="fragment fade-in">() => repo.books()  # returns array of books</span>
+																		<span class="fragment fade-in"># for each book</span>
+										name            <span class="fragment fade-in">  (book) => book.name</span>
 
-							const resolvers = {
-								Query: {
-									books: () => books
+										author {        <span class="fragment fade-in">  (book) => repo.findAuthor(book)  # returns author object</span>
+
+											first_name    <span class="fragment fade-in">  (author) => author.first_name</span>
+
+										}
+									}
 								}
-								Book: {
-									author: (book) => _.find(authors, { id: book.author_id })
-								}
-							};	
 							</code></pre>
 						<aside class="notes">
 							<ul>
@@ -776,11 +772,11 @@ HTTP/1.1 200 OK
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
-									id
-									name,
+									name
 									author {
-										first_name,
-										last_name,
+										first_name
+										last_name
+										bio
 										books { name }
 									}
 									ratings { rating }
@@ -790,11 +786,11 @@ HTTP/1.1 200 OK
 							<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 								{ "books": [
 									{
-										"id": 1,
 										"name": "JavaScript: The...",
 										"author": {
 											"first_name": "David",
 											"last_name": "Flanagan",
+											"bio": "David Flanagan is a computer programmer who..."
 											"books": [
 												{ "name": "JavaScript: T..." }
 											]
@@ -878,7 +874,7 @@ HTTP/1.1 200 OK
 					<!-- 48 -->
 					<section>
 						<h2>REST is not a good fit</h2>
-						<p class="fragment fade-in">Designed to promote building client-focused, product-based APIs</p>
+						<p class="fragment fade-in">Designed for building client-focused, product-based APIs</p>
 						<aside class="notes">
 							<ul>
 								<li>Designed for building client-focused, product-based APIs</li>
@@ -912,8 +908,9 @@ HTTP/1.1 200 OK
 					<!-- 51 -->
 					<section>
 						<h2>Even simple front end changes often require changes to the API</h2>
+						<div class="fragment fade-in">
 						<p>Not with GraphQL</p>
-						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
+						<pre class=""><code class="hljs" data-trim data-noescape>
 							{
 								books {
 									name,
@@ -922,6 +919,7 @@ HTTP/1.1 200 OK
 								}
 							}
 						</code></pre>
+						</div>
 						<aside class="notes">
 							<ul>
 								<li>Add the field to your query and keep going</li>
@@ -1071,7 +1069,7 @@ HTTP/1.1 200 OK
 						</code></pre>
 						<aside class="notes">
 							<ul>
-								<li>For complex type systems</li>
+								<li>The client is in charge</li>
 								<li>Client can construct crazy queries that could tax your API</li>
 								<li>Mitigate by: query cost analysis, rate limiting or whitelisting queries</li>
 							</ul>
