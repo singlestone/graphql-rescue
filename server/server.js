@@ -69,7 +69,7 @@ const typeDefs = `
   }
 `;
 
-// Our database is a bunhc of arrays
+// Our database is a bunch of arrays
 const books = [
   { id: 1, name: 'JavaScript: The Definitive Guide', isbn: '0596805527', author_id: 1, publish_date: '2011-05-13', price: 32.64 },
   { id: 2, name: 'JavaScript: Pocket Reference', isbn: '1449316859', author_id: 1, publish_date: '2012-04-28', price: 13.47 },
