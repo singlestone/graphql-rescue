@@ -339,9 +339,9 @@ HTTP/1.1 200 OK
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
-									name,
+									name
 									author {
-										first_name,
+										first_name
 										last_name
 									}
 									publish_date
@@ -382,7 +382,7 @@ HTTP/1.1 200 OK
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
-									name,
+									name
 									price(currency: USD)
 								}
 							}
@@ -412,8 +412,8 @@ HTTP/1.1 200 OK
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
-									name,
-									price(currency: USD),
+									name
+									price(currency: USD)
 									euPrice: price(currency: EUR)
 								}
 							}
@@ -446,7 +446,7 @@ HTTP/1.1 200 OK
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
-									name,
+									name
 									price(currency: $currency)
 								}
 							}
@@ -482,11 +482,11 @@ HTTP/1.1 200 OK
 					<section>
 						<h2>Mutations</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
-							mutation AddRating(rating: RatingInput!) {
+							mutation AddRating($rating: RatingInput!) {
 
 								addRating(rating: $rating) {
-									id, 
-									rating,
+									id
+									rating
 									date
 								}
 
@@ -530,8 +530,8 @@ HTTP/1.1 200 OK
 						<h2>Type system</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type Book {
-								id: Int,
-								name: String,
+								id: Int
+								name: String
 								isbn: String
 							}
 						</code></pre>
@@ -550,10 +550,10 @@ HTTP/1.1 200 OK
 						<h2>Scalar types</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type ScalarGrabBag {
-								id: ID,
-								string: String,
-								float: Float,
-								int: Int,
+								id: ID
+								string: String
+								float: Float
+								int: Int
 								bool: Boolean
 							}
 						</code></pre>
@@ -574,14 +574,14 @@ HTTP/1.1 200 OK
 						<h2>Composable, hierarchical object types</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type Book {
-								id: Int,
-								name: String,
-								isbn: String,
+								id: Int
+								name: String
+								isbn: String
 								author: Author
 							}
 
 							type Author {
-								first_name: String,
+								first_name: String
 								last_name: String
 							}
 						</code></pre>
@@ -596,10 +596,10 @@ HTTP/1.1 200 OK
 						<h2>Type modifiers</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type Book {
-								id: Int!, # id will never be null
-								name: String,
-								isbn: String,
-								author: Author!,
+								id: Int! # id will never be null
+								name: String
+								isbn: String
+								author: Author!
 								ratings: [Rating] # ratings is a list/array
 							}
 						</code></pre>
@@ -617,8 +617,8 @@ HTTP/1.1 200 OK
 						<h2>Enumerations</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							enum Currency {
-								USD,
-								CAD,
+								USD
+								CAD
 								EUR
 							}
 						</code></pre>
@@ -637,9 +637,9 @@ HTTP/1.1 200 OK
 						<h2>Arguments</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type Book {
-								id: Int!,
-								name: String,
-								isbn: String,
+								id: Int!
+								name: String
+								isbn: String
 								price(currency: Currency = USD): Float!
 							}
 						</code></pre>
@@ -658,9 +658,9 @@ HTTP/1.1 200 OK
 						<h2>Query and mutation types</h2>
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							type Query {
-								books: [Book],
-								authors: [Author],
-								users: [User],
+								books: [Book]
+								authors: [Author]
+								users: [User]
 								search(name: String): [SearchResult]
 							}
 						
@@ -814,11 +814,11 @@ HTTP/1.1 200 OK
 							<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 								{
 									books {
-										name,
-										isbn,
+										name
+										isbn
 										author {
-											first_name,
-											last_name,
+											first_name
+											last_name
 											books { name }
 										}
 										price(currency: USD)
@@ -828,7 +828,7 @@ HTTP/1.1 200 OK
 							<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 								{
 									books {
-										name,
+										name
 										author {
 											last_name
 										}
@@ -852,7 +852,7 @@ HTTP/1.1 200 OK
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
-									name,
+									name
 									author { firstName }
 								}
 							}
@@ -913,8 +913,8 @@ HTTP/1.1 200 OK
 						<pre class=""><code class="hljs" data-trim data-noescape>
 							{
 								books {
-									name,
-									author { firstName }<mark class="fragment fade-in">,
+									name
+									author { firstName }<mark class="fragment fade-in">
 									publish_date</mark>
 								}
 							}
@@ -1052,7 +1052,7 @@ HTTP/1.1 200 OK
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
-									name,
+									name
 									author {
 										books {
 											author {
@@ -1082,7 +1082,7 @@ HTTP/1.1 200 OK
 						<pre class="fragment fade-in"><code class="hljs" data-trim data-noescape>
 							{
 								books {
-									name,
+									name
 									author { # Resolver is called for each book
 										books { # Resolver is called for each book, author
 											name
